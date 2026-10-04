@@ -16,7 +16,6 @@ from utils.loader import load_all
 # ---------------------------------------------------------------------------
 # Page configuration
 # ---------------------------------------------------------------------------
-# st.set_page_config MUST be the first Streamlit call in the script.
 st.set_page_config(
     page_title="Smart Hospital Analytics",
     page_icon="🏥",
@@ -30,17 +29,12 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 @st.cache_data(ttl=600, show_spinner="Loading hospital data...")
 def get_data() -> dict:
-    """
-    Load all 7 tables once. Cached for 10 minutes (ttl=600 seconds).
-
-    First run: reads CSVs.
-    Every rerun within 10 minutes: returns cached DataFrames instantly.
-    """
+    """Load all 7 tables once. Cached for 10 minutes."""
     return load_all()
 
 
 # ---------------------------------------------------------------------------
-# Custom CSS — dark theme, glass-morphism, hover effects
+# Custom CSS
 # ---------------------------------------------------------------------------
 st.markdown(
     """
@@ -58,6 +52,10 @@ st.markdown(
         }
         [data-testid="stSidebar"] * {
             color: #c9d7ee;
+        }
+        /* Hide the default "app" nav entry — we use custom branding */
+        [data-testid="stSidebarNav"] > ul > li:first-child {
+            display: none;
         }
 
         /* ---------- Metric cards ---------- */
@@ -142,7 +140,7 @@ st.markdown(
 
 
 # ---------------------------------------------------------------------------
-# Load data once
+# Load data
 # ---------------------------------------------------------------------------
 data = get_data()
 patients = data["patients"]
@@ -161,19 +159,6 @@ with st.sidebar:
     st.markdown("### 🏥 Smart Hospital")
     st.markdown("**Analytics Dashboard**")
     st.caption("v1.0 · Mentor Mode")
-    st.divider()
-    st.markdown("#### Navigation")
-    st.markdown(
-        """
-        - 🏠 **Home** *(you are here)*
-        - 📊 Executive Overview *(Ch 6)*
-        - 👥 Patient Analytics *(Ch 7)*
-        - 🚑 Emergency *(Ch 8)*
-        - 🫀 ICU *(Ch 9)*
-        - 💰 Finance *(Ch 10)*
-        - 👨‍⚕️ Doctors *(Ch 11)*
-        """
-    )
     st.divider()
     st.caption(f"Patients: {len(patients):,}")
     st.caption(f"Admissions: {len(admissions):,}")
@@ -200,7 +185,7 @@ st.markdown(
 
 
 # ---------------------------------------------------------------------------
-# KPI row 1 — hospital scale
+# KPI row 1
 # ---------------------------------------------------------------------------
 col1, col2, col3, col4 = st.columns(4)
 
@@ -211,7 +196,7 @@ col4.metric("Departments", f"{len(departments)}")
 
 
 # ---------------------------------------------------------------------------
-# KPI row 2 — operational & financial
+# KPI row 2
 # ---------------------------------------------------------------------------
 col1, col2, col3, col4 = st.columns(4)
 
@@ -231,7 +216,6 @@ st.divider()
 st.markdown("#### Coming Next")
 st.markdown(
     """
-    - **Chapter 6** — Executive Overview with trend indicators
     - **Chapter 7** — Patient analytics: age, gender, disease, readmission
     - **Chapter 8** — Emergency peak hours and wait time trends
     - **Chapter 9** — ICU occupancy gauges and ventilator utilisation
