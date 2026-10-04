@@ -54,7 +54,7 @@ st.markdown(
                 radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.06), transparent 55%),
                 radial-gradient(ellipse at bottom right, rgba(123, 47, 247, 0.05), transparent 55%),
                 linear-gradient(180deg, #0a0e1a 0%, #0c1220 50%, #0a0e1a 100%);
-            color: #e6edf7;
+            color: #F0F2F6;
         }
 
         /* ---- Sidebar ---- */
@@ -103,7 +103,7 @@ st.markdown(
             line-height: 1.15;
         }
         [data-testid="stMetricLabel"] {
-            color: #8ba3c7;
+            color: #A0AAB8;
             font-size: clamp(0.68rem, 0.85vw, 0.82rem);
             font-weight: 600;
             letter-spacing: 0.08em;
@@ -138,7 +138,7 @@ st.markdown(
             animation: fadeInUp 0.8s ease both;
         }
         .hero-subtitle {
-            color: #8ba3c7;
+            color: #A0AAB8;
             font-size: clamp(0.95rem, 1.1vw, 1.15rem);
             font-weight: 400;
             line-height: 1.6;
@@ -174,7 +174,7 @@ st.markdown(
         h4 {
             font-weight: 700;
             letter-spacing: -0.01em;
-            color: #e6edf7;
+            color: #F0F2F6;
         }
 
         /* ---- Keyframes ---- */
@@ -212,7 +212,7 @@ with st.sidebar:
     st.markdown(
         "<h3 style='margin:0; font-weight:700; letter-spacing:-0.01em;'>"
         "🏥 Smart Hospital</h3>"
-        "<p style='margin:2px 0 0 0; color:#8ba3c7; font-size:0.9rem;'>"
+        "<p style='margin:2px 0 0 0; color:#A0AAB8; font-size:0.9rem;'>"
         "Analytics Dashboard</p>",
         unsafe_allow_html=True,
     )
@@ -280,7 +280,7 @@ st.divider()
 st.markdown("#### What's coming next")
 st.markdown(
     """
-    <p style='color:#8ba3c7; line-height:1.9; font-size:0.95rem;'>
+    <p style='color:#A0AAB8; line-height:1.9; font-size:0.95rem;'>
     <b style='color:#00d4ff;'>Patient Analytics</b> explores age, gender,
     diagnosis, and readmission patterns.<br>
     <b style='color:#00d4ff;'>Emergency</b> surfaces peak hours and wait time

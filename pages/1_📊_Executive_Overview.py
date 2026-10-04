@@ -37,7 +37,7 @@ GREEN = "#22c55e"
 AMBER = "#f59e0b"
 RED = "#ef4444"
 TEXT = "#c9d7ee"
-TEXT_DIM = "#8ba3c7"
+TEXT_DIM = "#A0AAB8"
 TEXT_FAINT = "#6b7f9e"
 
 
@@ -115,7 +115,7 @@ st.markdown(
                 radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.06), transparent 55%),
                 radial-gradient(ellipse at bottom right, rgba(123, 47, 247, 0.05), transparent 55%),
                 linear-gradient(180deg, #0a0e1a 0%, #0c1220 50%, #0a0e1a 100%);
-            color: #e6edf7;
+            color: #F0F2F6;
         }
 
         [data-testid="stSidebar"] {
@@ -156,7 +156,7 @@ st.markdown(
             line-height: 1.15;
         }
         [data-testid="stMetricLabel"] {
-            color: #8ba3c7;
+            color: #A0AAB8;
             font-size: clamp(0.68rem, 0.82vw, 0.78rem);
             font-weight: 600;
             letter-spacing: 0.08em;
@@ -190,7 +190,7 @@ st.markdown(
             animation: fadeInUp 0.8s ease both;
         }
         .page-sub {
-            color: #8ba3c7;
+            color: #A0AAB8;
             font-size: clamp(0.92rem, 1.05vw, 1.05rem);
             line-height: 1.6;
             margin-bottom: 0.4rem;
