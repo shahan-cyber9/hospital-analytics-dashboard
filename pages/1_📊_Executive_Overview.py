@@ -1,10 +1,9 @@
 """
 pages/1_📊_Executive_Overview.py
 --------------------------------
-Executive Overview with hospital-wide KPIs and headline charts.
+Executive Overview — hospital-wide KPIs and headline charts.
 
-Compares the last 12 months against the previous 12 months for trend indicators.
-The partial current month is excluded from trend charts.
+Integrates cross-page filters via utils.filters.
 """
 
 import pandas as pd
@@ -13,6 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.loader import load_all
+from utils.filters import render_filters, apply_filters, apply_filters_by_admission_id
 
 
 # ---------------------------------------------------------------------------
@@ -29,31 +29,31 @@ st.set_page_config(
 # Theme
 # ---------------------------------------------------------------------------
 CYAN = "#00d4ff"
-CYAN_DEEP = "#0891b2"
 PURPLE = "#7b2ff7"
-PURPLE_DEEP = "#6d28d9"
 BLUE = "#2563eb"
 GREEN = "#22c55e"
 AMBER = "#f59e0b"
 RED = "#ef4444"
-TEXT = "#c9d7ee"
+TEXT = "#F0F2F6"
 TEXT_DIM = "#A0AAB8"
-TEXT_FAINT = "#6b7f9e"
+
+PALETTE = [
+    "#00d4ff", "#7b2ff7", "#22c55e", "#f59e0b",
+    "#ef4444", "#06b6d4", "#a855f7", "#ec4899",
+    "#10b981", "#f97316", "#3b82f6", "#84cc16",
+    "#eab308", "#14b8a6", "#8b5cf6",
+]
 
 
 # ---------------------------------------------------------------------------
 # Chart helpers
 # ---------------------------------------------------------------------------
 def style_dark(fig: go.Figure, height: int = 400) -> go.Figure:
-    """Apply dark theme with refined spacing and typography."""
+    """Apply dark theme to any Plotly figure."""
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            color=TEXT,
-            family="Inter, -apple-system, sans-serif",
-            size=12.5,
-        ),
+        font=dict(color=TEXT, family="Inter, -apple-system, sans-serif", size=12.5),
         xaxis=dict(
             gridcolor="rgba(255,255,255,0.035)",
             zerolinecolor="rgba(255,255,255,0.08)",
@@ -85,20 +85,18 @@ def style_dark(fig: go.Figure, height: int = 400) -> go.Figure:
 
 
 def pct_change(new_value: float, old_value: float) -> float:
-    """Percentage change between two values."""
     if old_value == 0:
         return 0.0
     return (new_value - old_value) / old_value * 100.0
 
 
 def fmt_delta(pct: float) -> str:
-    """Format a percentage with explicit sign."""
     sign = "+" if pct >= 0 else ""
     return f"{sign}{pct:.1f}%"
 
 
 # ---------------------------------------------------------------------------
-# Global CSS
+# CSS
 # ---------------------------------------------------------------------------
 st.markdown(
     """
@@ -125,13 +123,12 @@ st.markdown(
         [data-testid="stSidebar"] * { color: #c9d7ee; }
         [data-testid="stSidebarNav"] > ul > li:first-child { display: none; }
 
-        /* ---- Metric cards ---- */
         [data-testid="stMetric"] {
             background: linear-gradient(135deg, rgba(20, 30, 50, 0.7), rgba(15, 22, 38, 0.65));
             border: 1px solid rgba(0, 212, 255, 0.14);
             border-left: 3px solid #00d4ff;
             border-radius: 14px;
-            padding: 18px 20px;
+            padding: 16px 20px;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -165,17 +162,12 @@ st.markdown(
             line-height: 1.35;
             min-height: 2.3em;
         }
-        [data-testid="stMetricDelta"] {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-        }
 
         [data-testid="column"] {
             min-width: 150px !important;
             padding: 0 6px;
         }
 
-        /* ---- Page header ---- */
         .page-title {
             font-size: clamp(1.8rem, 3vw, 2.4rem);
             font-weight: 800;
@@ -198,7 +190,7 @@ st.markdown(
         }
         .page-note {
             color: #6b7f9e;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-style: italic;
             margin-bottom: 1.6rem;
         }
@@ -206,7 +198,7 @@ st.markdown(
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #c9d7ee;
+            color: #F0F2F6;
             font-size: 0.85rem;
             font-weight: 600;
             letter-spacing: 0.1em;
@@ -252,15 +244,31 @@ data = get_data()
 patients = data["patients"]
 doctors = data["doctors"]
 departments = data["departments"]
-admissions = data["admissions"]
 icu = data["icu"]
 emergency = data["emergency"]
 billing = data["billing"]
 
+# Raw admissions (unfiltered) — needed for the sidebar widget options.
+admissions_raw = data["admissions"]
+
+# --- Filters ---
+filters = render_filters(data)
+
+# Filtered versions used everywhere below.
+admissions = apply_filters(admissions_raw, filters)
+icu_f = apply_filters_by_admission_id(icu, admissions)
+emergency_f = apply_filters_by_admission_id(emergency, admissions)
+billing_f = apply_filters_by_admission_id(billing, admissions)
+
 
 # ---------------------------------------------------------------------------
-# Time windows
+# Time windows — computed on the FILTERED admissions.
 # ---------------------------------------------------------------------------
+if admissions.empty:
+    st.markdown('<div class="page-title">Executive Overview</div>', unsafe_allow_html=True)
+    st.warning("No data matches the current filters. Adjust or reset the filters in the sidebar.")
+    st.stop()
+
 anchor = admissions["admission_date"].max()
 last_start = anchor - pd.DateOffset(months=12)
 prev_start = anchor - pd.DateOffset(months=24)
@@ -273,7 +281,7 @@ adm_prev = admissions[
     & (admissions["admission_date"] <= last_start)
 ]
 
-billing_with_dates = billing.merge(
+billing_with_dates = billing_f.merge(
     admissions[["admission_id", "admission_date", "admission_ym", "department"]],
     on="admission_id",
     how="left",
@@ -286,7 +294,7 @@ bill_prev = billing_with_dates[
 
 
 # ---------------------------------------------------------------------------
-# Page header
+# Hero
 # ---------------------------------------------------------------------------
 st.markdown('<div class="page-title">Executive Overview</div>', unsafe_allow_html=True)
 st.markdown(
@@ -310,15 +318,15 @@ st.markdown(
 # KPI row 1
 # ---------------------------------------------------------------------------
 admissions_delta = pct_change(len(adm_recent), len(adm_prev))
-revenue_recent = bill_recent["amount"].sum()
-revenue_prev = bill_prev["amount"].sum()
+revenue_recent = bill_recent["amount"].sum() if not bill_recent.empty else 0
+revenue_prev = bill_prev["amount"].sum() if not bill_prev.empty else 0
 revenue_delta = pct_change(revenue_recent, revenue_prev)
-los_recent = adm_recent["length_of_stay"].mean()
-los_prev = adm_prev["length_of_stay"].mean()
+los_recent = adm_recent["length_of_stay"].mean() if not adm_recent.empty else 0
+los_prev = adm_prev["length_of_stay"].mean() if not adm_prev.empty else 0
 los_delta = pct_change(los_recent, los_prev)
 
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Patients", f"{len(patients):,}")
+c1.metric("Total Patients", f"{patients['patient_id'].nunique():,}")
 c2.metric("Admissions, 12 months", f"{len(adm_recent):,}",
           delta=fmt_delta(admissions_delta))
 c3.metric("Revenue, 12 months", f"₹{revenue_recent / 1e7:.1f} Cr",
@@ -330,7 +338,7 @@ c4.metric("Avg Length of Stay", f"{los_recent:.1f} days",
 # ---------------------------------------------------------------------------
 # KPI row 2
 # ---------------------------------------------------------------------------
-icu_with_dates = icu.merge(
+icu_with_dates = icu_f.merge(
     admissions[["admission_id", "admission_date"]],
     on="admission_id", how="left",
 )
@@ -340,7 +348,7 @@ icu_prev = icu_with_dates[
     & (icu_with_dates["admission_date"] <= last_start)
 ]
 
-er_with_dates = emergency.merge(
+er_with_dates = emergency_f.merge(
     admissions[["admission_id", "admission_date"]],
     on="admission_id", how="left",
 )
@@ -350,8 +358,8 @@ er_prev = er_with_dates[
     & (er_with_dates["admission_date"] <= last_start)
 ]
 
-readmit_recent = adm_recent["is_readmission"].mean() * 100
-readmit_prev = adm_prev["is_readmission"].mean() * 100
+readmit_recent = adm_recent["is_readmission"].mean() * 100 if not adm_recent.empty else 0
+readmit_prev = adm_prev["is_readmission"].mean() * 100 if not adm_prev.empty else 0
 readmit_delta = pct_change(readmit_recent, readmit_prev)
 
 c1, c2, c3, c4 = st.columns(4)
@@ -361,7 +369,7 @@ c2.metric("Emergency Visits", f"{len(er_recent):,}",
           delta=fmt_delta(pct_change(len(er_recent), len(er_prev))))
 c3.metric("Readmission Rate", f"{readmit_recent:.2f}%",
           delta=fmt_delta(readmit_delta), delta_color="inverse")
-c4.metric("Departments", f"{len(departments)}")
+c4.metric("Departments", f"{admissions['department'].nunique()}")
 
 
 # ---------------------------------------------------------------------------
@@ -388,9 +396,7 @@ monthly_adm = (
 monthly_rev = (
     bill_trend.groupby("admission_ym")["amount"].sum().reset_index(name="revenue")
 )
-monthly = (
-    monthly_adm.merge(monthly_rev, on="admission_ym").sort_values("admission_ym")
-)
+monthly = monthly_adm.merge(monthly_rev, on="admission_ym").sort_values("admission_ym")
 
 fig1 = go.Figure()
 fig1.add_trace(go.Bar(
@@ -411,11 +417,7 @@ fig1.add_trace(go.Scatter(
     name="Revenue (₹)",
     mode="lines+markers",
     line=dict(color=PURPLE, width=3, shape="spline", smoothing=0.6),
-    marker=dict(
-        size=8,
-        color=PURPLE,
-        line=dict(color="#0a0e1a", width=2),
-    ),
+    marker=dict(size=8, color=PURPLE, line=dict(color="#0a0e1a", width=2)),
     fill="tozeroy",
     fillcolor="rgba(123, 47, 247, 0.08)",
     yaxis="y2",
@@ -455,7 +457,7 @@ with c1:
         color="count",
         color_continuous_scale=[
             [0.0, "#0e2a4a"],
-            [0.5, CYAN_DEEP],
+            [0.5, "#0891b2"],
             [1.0, CYAN],
         ],
         text="count",
@@ -541,7 +543,7 @@ with c1:
         color="count",
         color_continuous_scale=[
             [0.0, "#0e2a4a"],
-            [0.5, CYAN_DEEP],
+            [0.5, "#0891b2"],
             [1.0, CYAN],
         ],
         text="count",
